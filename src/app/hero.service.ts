@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+
 import { Hero } from './hero';
 import { Observable, of } from 'rxjs';
 import { MessageService } from './message.service';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, tap } from 'rxjs/operators';
 
 const httpOptions = {
@@ -12,7 +13,10 @@ const httpOptions = {
 @Injectable({
   providedIn: 'root'
 })
+
 export class HeroService {
+
+  private heroesUrl = 'api/heroes';
 
   getHeroes(): Observable<Hero[]> {
     return this.http.get<Hero[]>(this.heroesUrl)
@@ -20,6 +24,19 @@ export class HeroService {
         tap(heroes => this.log('fetched heroes')),
         catchError(this.handleError('getHeroes', []))
       );
+  }
+
+  getHeroNo404<Data>(id: number): Observable<Hero> {
+    const url = `${this.heroesUrl}/?id=${id}`;
+    return this.http.get<Hero[]>(url)
+      .pipe(
+        map(heroes => heroes[0]), 
+        tap(h => {
+          const outcome = h ? `fetched`: `did not find`;
+          this.log(`${outcome} hero id=${id}`);
+        }),
+        catchError(this.handleError<Hero>(`getHero id=${id}`))
+      )
   }
 
   updateHero (hero: Hero): Observable<any> {
@@ -71,8 +88,6 @@ export class HeroService {
   private log(message: string) {
     this.messageService.add(`HeroService: ${message}`);
   }
-
-  private heroesUrl = 'api/heroes';
 
   private handleError<T> (operation = 'operation', result?: T)
   {
